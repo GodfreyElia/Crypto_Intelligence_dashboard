@@ -1,30 +1,29 @@
-## Title: Crypto Intelligence dashboard
+## Title: Crypto Intelligence Dashboard
 
-<br clear="both">
 
-### 🧠 Crypto Intelligence Dashboard
+### 🧠 Project Summary
 
 Crypto Intelligence Dashboard is an interactive Shiny application built with shinydashboard, providing powerful tools for analyzing, comparing, and predicting cryptocurrency performance using live and historical data from Binance.
 
 ### 🚀 Features
 
-1. Price & Return Visualization 📊
+#### Price & Return Visualization 📊
 
 Interactive plots showing historical price trends and return distributions for selected cryptocurrencies.
 
-3. Comparative Analysis 🔍
+#### Comparative Analysis 🔍
 
 Side-by-side comparison of two selected cryptos across key metrics: price, volatility, return, number of trades, volume.
 
-5. Summary Statistics 📈
+#### Summary Statistics 📈
 
 Dynamic tables summarizing latest market stats and descriptive statistics for each selected crypto.
 
-6. Return Prediction Module 🤖
+#### Return Prediction Module 🤖
 
 Predicts tomorrow’s return using historical data and engineered features such as past returns and volatility, powered by a machine learning model (e.g., Random Forest or XGBoost).
 
-7. Deployed via shinyapps.io 🌐
+#### Deployed via shinyapps.io 🌐
 
 Accessible from any browser—no installation needed.
 
@@ -46,9 +45,11 @@ Visit [crypto intelligence dashboard](https://godfreyelia.shinyapps.io/Crypto_In
 
 ### 🧠 Author
 
+Godfrey Elia Nkolokosa
+
 🎓 Ashinaga & Mastercard Foundation Scholar
 
-🔗 [LinkedIn](https://www.linkedin.com/in/godfreyn321/)
+🔗 Visit linkedin [here](https://www.linkedin.com/in/godfreyn321/)
 
 
 ### 📄 License
