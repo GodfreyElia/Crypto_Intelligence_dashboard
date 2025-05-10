@@ -31,7 +31,7 @@ Tidyverse, plotly, data.table, xgboost
 Binance API for crypto data
 
 🌍 Live Demo
-Coming soon: https://yourname.shinyapps.io/crypto-intelligence-dashboard
+[crypto intelligence dashboard](https://godfreyelia.shinyapps.io/Crypto_Intelligence_dashboard/)
 
 🧠 Author
 Godfrey Elia
