@@ -1,3 +1,7 @@
+library(randomForest)
+library(ipred)
+library(gbm)
+library(e1071)
 library(ggplot2)
 library(ggpubr)
 library('treemapify')
@@ -22,13 +26,16 @@ server <- function(input, output, session) {
   # Use shinyjs to hide/show elements based on the tab
   observe({
     current_tab <- input$sidebar
+    
     if (current_tab == "overview") {
       hide("primary_crypto")
       hide("comparative_crypto")
       hide("chart1_var")
       hide("chart2_var")
+      hide("model_choice_wrapper")
+      
     } else if (current_tab == "visualization") {
-      # Show based on sub-tab
+      # Show/hide elements based on sub-tab
       if (input$viz_tabs == "Trend Comparison") {
         show("primary_crypto")
         show("comparative_crypto")
@@ -45,94 +52,152 @@ server <- function(input, output, session) {
         hide("chart1_var")
         hide("chart2_var")
       }
+      hide("model_choice_wrapper")
+      
     } else if (current_tab == "prediction") {
       show("primary_crypto")
       show("comparative_crypto")
       hide("chart1_var")
       hide("chart2_var")
+      show("model_choice_wrapper")
     }
   })
+  
   
   
   # --- NEW: About Tab with two interactive plots side by side
   output$about_plots <- renderUI({
     fluidRow(
-      # Left column for the first plot
-      column(6,
-             plotlyOutput("price_plot", height = "250px"),
-             plotOutput("bar_chart", height = "400px")
+      column(
+        width = 6,
+        box(
+          title = "Price Trend", solidHeader = FALSE,
+          plotlyOutput("price_plot", height = "300px"),
+          width = NULL,
+          style = "border: 1px solid #ddd; margin-bottom: 10px; padding: 5px;"
+        ),
+        box(
+          title = "Bar Chart", solidHeader = FALSE,
+          plotlyOutput("bar_chart", height = "250px"),
+          width = NULL,
+          style = "border: 1px solid #ddd; padding: 5px;"
+        )
       ),
-      # Right column for the second plot
-      column(6,
-             plotOutput("heatmap_plot", height = "400px"),
-             plotlyOutput("return_plot", height = "250px")
+      column(
+        width = 6,
+        box(
+          title = "Heatmap", solidHeader = FALSE,
+          plotlyOutput("heatmap_plot", height = "250px"),
+          width = NULL,
+          style = "border: 1px solid #ddd; margin-bottom: 10px; padding: 5px;"
+        ),
+        box(
+          title = "Return Trend", solidHeader = FALSE,
+          plotlyOutput("return_plot", height = "300px"),
+          width = NULL,
+          style = "border: 1px solid #ddd; padding: 5px;"
+        )
       )
     )
   })
   
   
+  
   output$price_plot <- renderPlotly({
-    plot_ly(model_data, x = ~OpenTime, y = ~Close, color = ~Crypto, type = 'scatter', mode = 'lines') %>%
+    plot_ly(model_data, 
+            x = ~OpenTime, 
+            y = ~Close, 
+            color = ~Crypto,
+            colors = "Set1",
+            type = 'scatter', 
+            mode = 'lines') %>%
       layout(title = "Crypto Price Trend",
              xaxis = list(title = "Date"),
-             yaxis = list(title = "Price (USD)"))
+             yaxis = list(title = "Price (USD)"),
+             legend = list(
+               font = list(size = 8),
+               orientation = "v",   # Vertical to avoid taking up width
+               x = 1.02,            # Just outside the plot
+               y = 1,
+               bgcolor = 'rgba(255,255,255,0.5)',  # semi-transparent background
+               bordercolor = 'gray',
+               borderwidth = 0.5
+             ),
+             margin = list(r = 120)  # Extra space on the right for the legend
+      )
   })
   
   output$return_plot <- renderPlotly({
-    plot_ly(model_data, x = ~OpenTime, y = ~Return, color = ~Crypto, type = 'scatter', mode = 'lines') %>%
-      layout(title = "Crypto Return Trend",
-             xaxis = list(title = "Date"),
-             yaxis = list(title = "Return (%)"))
+    plot_ly(model_data, 
+            x = ~OpenTime, 
+            y = ~Return, 
+            color = ~Crypto, 
+            colors = "Set1",
+            type = 'scatter', 
+            mode = 'lines') %>%
+      layout(
+        title = "Crypto Return Trend",
+        xaxis = list(title = "Date"),
+        yaxis = list(title = "Return (%)"),
+        legend = list(
+          font = list(size = 8),
+          orientation = "v",   # Vertical to avoid taking up width
+          x = 1.02,            # Just outside the plot
+          y = 1,
+          bgcolor = 'rgba(255,255,255,0.5)',  # semi-transparent background
+          bordercolor = 'gray',
+          borderwidth = 0.5
+        ),
+        margin = list(r = 120)  # Extra space on the right for the legend
+      )
   })
   
 
-  output$heatmap_plot <- renderPlot({
-
+  output$heatmap_plot <- renderPlotly({
+    
     Cryp <- model_data %>%
       group_by(Crypto) %>%
-      summarise(Average = mean(Return, na.rm = TRUE))
+      summarise(Average = mean(Return, na.rm = TRUE)) 
     
-      ggplot(Cryp, aes(area = Average, fill = Average)) +
-      geom_treemap() +
-      geom_treemap_text(aes(label = Crypto), color = "white") +
-      labs(title = "Heatmap of Average Daily Returns of Cryptos") +
-      scale_fill_viridis_c(name = "Avg Return", option = "turbo") +
-      theme(
-        axis.text = element_text(size = 8),
-        axis.title = element_text(size = 10),
-        plot.title = element_text(size = 12, vjust = 2, face = "bold"),
-        plot.subtitle = element_text(size = 10, vjust = 2),
-        legend.position = "right",
-        legend.text = element_text(size = 8)
+    plot_ly(
+      data = Cryp, 
+      type = "treemap",
+      labels = ~Crypto, 
+      parents = "",
+      values = ~Average,
+      textinfo = "label+value",
+      hoverinfo = "label+value",
+      marker = list(colors = ~Average,
+                    colorscale = 'viridis', showscale = TRUE) 
+    ) %>%
+      layout(
+        title = "Interactive Heatmap of Average Daily Returns of Cryptos (To Date)",
+        font = list(size = 10),
+        margin = list(t = 30)
       )
-    
-    
   })
   
 
-  output$bar_chart <- renderPlot({
-    Outliers <- model_data %>%
-      group_by(Crypto) %>%
-      summarise(Day0 = mean(Return, na.rm = TRUE)) %>%
-      arrange(desc(Day0)) %>%
-      slice(c(1:10, (n()-9):n()))
-    
-      ggbarplot(Outliers, x = "Crypto", y = "Day0",
-              fill = "Crypto", color = "white",
-              palette = "viridis", sort.val = "desc", 
-              sort.by.groups = FALSE, legend = "right", 
-              ggtheme = theme_pubclean()) +
-      font("x.text", size = 8, vjust = 0) +
-      scale_x_discrete(breaks = seq(0, 20, 1)) +
-      labs(x = "Crypto", y = "Return (%)") +
-      theme(axis.text = element_text(size = 8), axis.title = element_text(size = 10)) +
-      geom_text(aes(label = Crypto, angle = 90), size = 2.5) +
-      labs(title = "Top 10 Daily Losers and Gainers YTD",
-           subtitle = '* The Returns exclude outliers that have been plotted separately') +
-      theme(plot.title = element_text(size = 12, hjust = 0.5, face = "bold"),
-            plot.subtitle = element_text(size = 9, hjust = 0.5))
-
-  })
+output$bar_chart <- renderPlotly({
+  Outliers <- model_data %>%
+    group_by(Crypto) %>%
+    summarise(Return = mean(Return, na.rm = TRUE)) %>%
+    arrange(desc(Return)) %>%
+    slice(c(1:10, (n() - 9):n()))
+  
+  p <- ggplot(Outliers, aes(x = reorder(Crypto, Return), y = Return, fill = Crypto)) +
+    geom_col(color = "white") +
+    coord_flip() +
+    scale_fill_viridis_d(option = "F") +
+    labs(x = "Crypto", y = "Return (%)",
+         title = "Top 10 Daily Losers and Gainers YTD") +
+    theme_minimal(base_size = 10) +
+    theme(legend.position = "none",
+          plot.title = element_text(size = 12, hjust = 0.5),
+          plot.subtitle = element_text(size = 9, hjust = 0.5))
+  
+  ggplotly(p)
+})
   
   output$data_table <- DT::renderDataTable({
     rounded_data <- model_data %>%
@@ -160,11 +225,21 @@ server <- function(input, output, session) {
     plot_data <- model_data %>%
       filter(Crypto %in% c(input$primary_crypto, input$comparative_crypto))
     
-    plot_ly(plot_data, x = ~OpenTime, y = as.formula(paste0("~", input$chart1_var)),
-            color = ~Crypto, type = 'scatter', mode = 'lines') %>%
+    plot_ly(plot_data, 
+            x = ~OpenTime, 
+            y = as.formula(paste0("~", input$chart1_var)),
+            color = ~Crypto,
+            colors = "Set1",
+            type = 'scatter', 
+            mode = 'lines') %>%
       layout(title = paste("Comparative", input$chart1_var, "Trend"),
              xaxis = list(title = "Date"),
-             yaxis = list(title = input$chart1_var))
+             yaxis = list(title = input$chart1_var),
+             legend = list(
+               font = list(size = 8),        # Smaller legend text
+               orientation = "h",            # Horizontal legend
+               x = 0, y = -0.2               # Position below the plot
+             ))
   })
   
   output$dist_plot <- renderPlotly({
@@ -172,12 +247,20 @@ server <- function(input, output, session) {
     plot_data <- model_data %>%
       filter(Crypto %in% c(input$primary_crypto, input$comparative_crypto))
     
-    plot_ly(plot_data, x = as.formula(paste0("~", input$chart2_var)), color = ~Crypto,
+    plot_ly(plot_data, 
+            x = as.formula(paste0("~", input$chart2_var)), 
+            color = ~Crypto,
+            colors = "Set1",
             type = 'histogram', nbinsx = 50, opacity = 0.6) %>%
       layout(barmode = "overlay",
              title = paste(input$chart2_var, "Distribution"),
              xaxis = list(title = input$chart2_var),
-             yaxis = list(title = "Frequency"))
+             yaxis = list(title = "Frequency"),
+             legend = list(
+               font = list(size = 8),        # Smaller legend text
+               orientation = "h",            # Horizontal legend
+               x = 0, y = -0.2               # Position below the plot
+             ))
   })
   
   output$latest_stats <- renderUI({
@@ -229,58 +312,119 @@ server <- function(input, output, session) {
                     ))
   })
   
-  
-  predict_next_return <- function(df) {
-    df <- df %>% filter(!is.na(Lag1_Return), !is.na(MA5_Return), !is.na(Volatility5), !is.na(Lag1_Volume)) %>%
-      arrange(OpenTime) %>%
-      mutate(Target = lead(Return)) %>%
-      drop_na(Target)
+  predict_next_return <- function(df, model_name) {
+    df <- df %>% arrange(OpenTime) %>% mutate(
+      Lag1_Return = lag(Return, 1),
+      MA5_Return = zoo::rollmean(Return, 5, fill = NA, align = "right"),
+      Volatility5 = zoo::rollapply(Return, 5, sd, fill = NA, align = "right"),
+      Lag1_Volume = lag(Volume, 1),
+      Target = lead(Return)
+    ) %>% drop_na()
+    
     if (nrow(df) < 30) return(NA)
-    model <- lm(Target ~ Lag1_Return + MA5_Return + Volatility5 + Lag1_Volume, data = df)
-    latest <- df %>% slice_max(OpenTime, n = 1)
-    predict(model, newdata = latest)
-  }
-  
-  evaluate_model <- function(df) {
-    df <- df %>% filter(!is.na(Lag1_Return), !is.na(MA5_Return), !is.na(Volatility5), !is.na(Lag1_Volume)) %>%
-      arrange(OpenTime) %>%
-      mutate(Target = lead(Return)) %>%
-      drop_na(Target)
-    if (nrow(df) < 50) return(NULL)
-    split <- floor(0.8 * nrow(df))
-    train <- df[1:split, ]; test <- df[(split+1):nrow(df), ]
-    model <- lm(Target ~ Lag1_Return + MA5_Return + Volatility5 + Lag1_Volume, data = train)
-    test$Pred <- predict(model, newdata = test)
-    list(
-      RMSE = round(sqrt(mean((test$Target - test$Pred)^2)), 4),
-      MAE = round(mean(abs(test$Target - test$Pred)), 4),
-      R2 = round(summary(model)$r.squared, 4)
+    train <- df[1:(nrow(df)-1), ]
+    latest <- df[nrow(df), ]
+    
+    model <- switch(model_name,
+                    "Linear Regression" = lm(Target ~ Lag1_Return + MA5_Return + Volatility5 + Lag1_Volume, data = train),
+                    "Random Forest" = randomForest(Target ~ Lag1_Return + MA5_Return + Volatility5 + Lag1_Volume, data = train),
+                    "Bagging" = bagging(Target ~ Lag1_Return + MA5_Return + Volatility5 + Lag1_Volume, data = train),
+                    "Boosting" = gbm(Target ~ Lag1_Return + MA5_Return + Volatility5 + Lag1_Volume, data = train, distribution = "gaussian", n.trees = 100),
+                    "SVM" = svm(Target ~ Lag1_Return + MA5_Return + Volatility5 + Lag1_Volume, data = train)
     )
+    
+    if (model_name == "Boosting") {
+      predict(model, newdata = latest, n.trees = 100)
+    } else {
+      predict(model, newdata = latest)
+    }
   }
   
   output$predicted_return <- renderUI({
-    p <- round(predict_next_return(filter(model_data, Crypto == input$primary_crypto)), 3)
-    c <- round(predict_next_return(filter(model_data, Crypto == input$comparative_crypto)), 3)
-    tags$table(class = "table table-bordered",
-               tags$thead(tags$tr(tags$th("Crypto"), tags$th("Predicted Return (%)"))),
-               tags$tbody(
-                 tags$tr(tags$td(input$primary_crypto), tags$td(p)),
-                 tags$tr(tags$td(input$comparative_crypto), tags$td(c))
-               )
-    )
+    req(input$primary_crypto, input$model_choice)
+    df <- model_data %>% filter(Crypto == input$primary_crypto)
+    pred <- predict_next_return(df, input$model_choice)
+    if (is.na(pred)) {
+      h4("Not enough data to generate prediction.")
+    } else {
+      valueBox(subtitle = paste("Predicted Return for", input$primary_crypto, "(Tomorrow)"),
+               value = paste0(round(pred, 2), "%"),
+               icon = icon("chart-line"), color = "green")
+    }
+  })
+  
+  output$comparative_predicted_return <- renderUI({
+    req(input$comparative_crypto, input$model_choice)
+    df <- model_data %>% filter(Crypto == input$comparative_crypto)
+    pred <- predict_next_return(df, input$model_choice)
+    if (is.na(pred)) {
+      h4("Not enough data to generate comparative prediction.")
+    } else {
+      valueBox(subtitle = paste("Predicted Return for", input$comparative_crypto, "(Tomorrow)"),
+               value = paste0(round(pred, 2), "%"),
+               icon = icon("chart-line"), color = "blue")
+    }
   })
   
   output$model_diagnostics <- renderUI({
-    p <- evaluate_model(filter(model_data, Crypto == input$primary_crypto))
-    c <- evaluate_model(filter(model_data, Crypto == input$comparative_crypto))
-    if (is.null(p) || is.null(c)) return(tags$p("Not enough data"))
-    tags$table(class = "table table-striped",
-               tags$thead(tags$tr(tags$th("Metric"), tags$th(input$primary_crypto), tags$th(input$comparative_crypto))),
-               tags$tbody(
-                 tags$tr(tags$td("RMSE"), tags$td(p$RMSE), tags$td(c$RMSE)),
-                 tags$tr(tags$td("MAE"), tags$td(p$MAE), tags$td(c$MAE)),
-                 tags$tr(tags$td("R-squared"), tags$td(p$R2), tags$td(c$R2))
-               )
+    req(input$primary_crypto, input$model_choice)
+    df <- model_data %>% filter(Crypto == input$primary_crypto) %>% arrange(OpenTime) %>% mutate(
+      Lag1_Return = lag(Return, 1),
+      MA5_Return = zoo::rollmean(Return, 5, fill = NA, align = "right"),
+      Volatility5 = zoo::rollapply(Return, 5, sd, fill = NA, align = "right"),
+      Lag1_Volume = lag(Volume, 1),
+      Target = lead(Return)
+    ) %>% drop_na()
+    if (nrow(df) < 50) return(h4("Insufficient data for diagnostics."))
+    split <- floor(0.8 * nrow(df))
+    train <- df[1:split, ]; test <- df[(split+1):nrow(df), ]
+    model <- switch(input$model_choice,
+                    "Linear Regression" = lm(Target ~ Lag1_Return + MA5_Return + Volatility5 + Lag1_Volume, data = train),
+                    "Random Forest" = randomForest(Target ~ Lag1_Return + MA5_Return + Volatility5 + Lag1_Volume, data = train),
+                    "Bagging" = bagging(Target ~ Lag1_Return + MA5_Return + Volatility5 + Lag1_Volume, data = train),
+                    "Boosting" = gbm(Target ~ Lag1_Return + MA5_Return + Volatility5 + Lag1_Volume, data = train, distribution = "gaussian", n.trees = 100),
+                    "SVM" = svm(Target ~ Lag1_Return + MA5_Return + Volatility5 + Lag1_Volume, data = train)
     )
+    pred <- if (input$model_choice == "Boosting") predict(model, newdata = test, n.trees = 100) else predict(model, newdata = test)
+    RMSE <- sqrt(mean((test$Target - pred)^2))
+    MAE <- mean(abs(test$Target - pred))
+    R2 <- cor(test$Target, pred)^2
+    tagList(h4(paste("Model Diagnostics for", input$primary_crypto)), tags$ul(
+      tags$li(paste("RMSE:", round(RMSE, 4))),
+      tags$li(paste("MAE:", round(MAE, 4))),
+      tags$li(paste("R-squared:", round(R2, 4)))
+    ))
   })
+  
+  
+  output$comparative_model_diagnostics <- renderUI({
+    req(input$comparative_crypto, input$model_choice)
+    df <- model_data %>% filter(Crypto == input$comparative_crypto) %>% arrange(OpenTime) %>% mutate(
+      Lag1_Return = lag(Return, 1),
+      MA5_Return = zoo::rollmean(Return, 5, fill = NA, align = "right"),
+      Volatility5 = zoo::rollapply(Return, 5, sd, fill = NA, align = "right"),
+      Lag1_Volume = lag(Volume, 1),
+      Target = lead(Return)
+    ) %>% drop_na()
+    if (nrow(df) < 50) return(h4("Insufficient data for comparative diagnostics."))
+    split <- floor(0.8 * nrow(df))
+    train <- df[1:split, ]; test <- df[(split+1):nrow(df), ]
+    model <- switch(input$model_choice,
+                    "Linear Regression" = lm(Target ~ Lag1_Return + MA5_Return + Volatility5 + Lag1_Volume, data = train),
+                    "Random Forest" = randomForest(Target ~ Lag1_Return + MA5_Return + Volatility5 + Lag1_Volume, data = train),
+                    "Bagging" = bagging(Target ~ Lag1_Return + MA5_Return + Volatility5 + Lag1_Volume, data = train),
+                    "Boosting" = gbm(Target ~ Lag1_Return + MA5_Return + Volatility5 + Lag1_Volume, data = train, distribution = "gaussian", n.trees = 100),
+                    "SVM" = svm(Target ~ Lag1_Return + MA5_Return + Volatility5 + Lag1_Volume, data = train)
+    )
+    pred <- if (input$model_choice == "Boosting") predict(model, newdata = test, n.trees = 100) else predict(model, newdata = test)
+    RMSE <- sqrt(mean((test$Target - pred)^2))
+    MAE <- mean(abs(test$Target - pred))
+    R2 <- cor(test$Target, pred)^2
+    tagList(h4(paste("Model Diagnostics for", input$comparative_crypto)), tags$ul(
+      tags$li(paste("RMSE:", round(RMSE, 4))),
+      tags$li(paste("MAE:", round(MAE, 4))),
+      tags$li(paste("R-squared:", round(R2, 4)))
+    ))
+  })
+  
 }
