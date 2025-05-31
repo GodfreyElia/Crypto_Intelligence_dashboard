@@ -7,9 +7,9 @@
 </div>
 
 
-### 🧠 Project Summary
+### Description:
 
-Crypto Intelligence Dashboard is an interactive Shiny application built with shinydashboard, providing powerful tools for analyzing, comparing, and predicting cryptocurrency performance using live and historical data from Binance.
+Crypto Intelligence Dashboard is an interactive Shiny application built with shinydashboard. With over 350 cryptocurrencies, the dashboard offers a powerful tool for analyzing, comparing, and predicting cryptocurrency performance using historical data from Binance.
 
 ### 🚀 Features
 
