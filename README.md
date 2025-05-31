@@ -3,7 +3,7 @@
 <br clear="both">
 
 <div align="center">
-  <img height="300" width="100%" src="https://github.com/GodfreyElia/Crypto_Intelligence_dashboard/blob/main/Landing_page.png"  />
+  <img height="50%" width="75%" src="https://github.com/GodfreyElia/Crypto_Intelligence_dashboard/blob/main/Landing_page.png"  />
 </div>
 
 
