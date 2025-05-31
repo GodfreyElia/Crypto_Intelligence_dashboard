@@ -1,5 +1,11 @@
 ## Title: Crypto Intelligence Dashboard
 
+<br clear="both">
+
+<div align="center">
+  <img height="300" width="100%" src="https://github.com/GodfreyElia/Crypto_Intelligence_dashboard/blob/main/Landing_page.png"  />
+</div>
+
 
 ### 🧠 Project Summary
 
@@ -55,3 +61,5 @@ Godfrey Elia Nkolokosa
 ### 📄 License
 
 This project is open-source under the MIT License.
+
+---
